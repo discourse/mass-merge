@@ -4,7 +4,7 @@
 if (process.argv.length < 4) {
   console.error("Usage:");
   console.error(
-    'GITHUB_TOKEN=*** node index.js [organization] ["commit message"]'
+    'GITHUB_TOKEN=*** npx mass-merge [organization] ["commit message"]'
   );
   process.exit(1);
 }
