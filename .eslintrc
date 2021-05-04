@@ -1,0 +1,6 @@
+{
+  "extends": "eslint-config-discourse",
+  "rules": {
+    "no-console": "off"
+  }
+}

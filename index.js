@@ -20,6 +20,7 @@ const { Octokit } = require("@octokit/core");
 const octokit = new Octokit({ auth: token });
 
 function sleep(ms) {
+  // eslint-disable-next-line no-restricted-globals
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
