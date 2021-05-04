@@ -5,6 +5,7 @@
   "main": "index.js",
   "author": "Jarek Radosz",
   "license": "MIT",
+  "repository": "https://github.com/discourse/mass-merge",
   "bin": {
     "mass-merge": "index.js"
   },
