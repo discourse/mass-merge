@@ -1,16 +1,18 @@
-'use strict';
+"use strict";
 
 const token = process.env["GITHUB_TOKEN"];
 
 if (!token) {
-  console.error("GITHUB_TOKEN environment variable required!")
-  console.error("Create a personal access token at https://github.com/settings/tokens/new?scopes=repo");
+  console.error("GITHUB_TOKEN environment variable required!");
+  console.error(
+    "Create a personal access token at https://github.com/settings/tokens/new?scopes=repo"
+  );
   process.exit(1);
 }
 
 if (process.argv.length < 4) {
   console.error("Usage:");
-  console.error("GITHUB_TOKEN=*** node index.js [org] [\"commit message\"]");
+  console.error('GITHUB_TOKEN=*** node index.js [org] ["commit message"]');
   process.exit(1);
 }
 
@@ -22,17 +24,20 @@ function sleep(ms) {
 }
 
 async function approve(owner, repo, pullNumber) {
-	await octokit.request('POST /repos/{owner}/{repo}/pulls/{pullNumber}/reviews', {
-    owner,
-    repo,
-    pullNumber,
-    event: "APPROVE",
-  });
+  await octokit.request(
+    "POST /repos/{owner}/{repo}/pulls/{pullNumber}/reviews",
+    {
+      owner,
+      repo,
+      pullNumber,
+      event: "APPROVE",
+    }
+  );
   process.stdout.write("approved ");
 }
 
 async function merge(owner, repo, pullNumber) {
-  await octokit.request('PUT /repos/{owner}/{repo}/pulls/{pullNumber}/merge', {
+  await octokit.request("PUT /repos/{owner}/{repo}/pulls/{pullNumber}/merge", {
     owner,
     repo,
     pullNumber,
@@ -63,7 +68,9 @@ async function listAll(owner, title) {
     page: 0,
   });
 
-  console.log(`Total count: ${response.data.total_count} (${response.data.items.length})`);
+  console.log(
+    `Total count: ${response.data.total_count} (${response.data.items.length})`
+  );
   await sleep(2000);
 
   let processed = 0;
@@ -75,7 +82,9 @@ async function listAll(owner, title) {
 
     // Safety checks
     if (pr.user.login !== "dependabot[bot]") {
-      console.log(`invalid PR author: "${pr.user.login}" expected: "dependabot[bot]"`);
+      console.log(
+        `invalid PR author: "${pr.user.login}" expected: "dependabot[bot]"`
+      );
       continue;
     }
 
@@ -94,7 +103,7 @@ async function listAll(owner, title) {
   return {
     processed,
     total: response.data.items.length,
-  }
+  };
 }
 
 listAll(process.argv[2], process.argv[3])
