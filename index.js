@@ -1,6 +1,12 @@
 #!/usr/bin/env node
 "use strict";
 
+if (process.argv.length < 4) {
+  console.error("Usage:");
+  console.error('GITHUB_TOKEN=*** node index.js [org] ["commit message"]');
+  process.exit(1);
+}
+
 const token = process.env["GITHUB_TOKEN"];
 
 if (!token) {
@@ -8,12 +14,6 @@ if (!token) {
   console.error(
     "Create a personal access token at https://github.com/settings/tokens/new?scopes=repo"
   );
-  process.exit(1);
-}
-
-if (process.argv.length < 4) {
-  console.error("Usage:");
-  console.error('GITHUB_TOKEN=*** node index.js [org] ["commit message"]');
   process.exit(1);
 }
 
