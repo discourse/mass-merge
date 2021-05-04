@@ -3,7 +3,9 @@
 
 if (process.argv.length < 4) {
   console.error("Usage:");
-  console.error('GITHUB_TOKEN=*** node index.js [org] ["commit message"]');
+  console.error(
+    'GITHUB_TOKEN=*** node index.js [organization] ["commit message"]'
+  );
   process.exit(1);
 }
 
