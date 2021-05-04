@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 "use strict";
 
 const token = process.env["GITHUB_TOKEN"];

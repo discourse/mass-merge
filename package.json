@@ -5,6 +5,12 @@
   "main": "index.js",
   "author": "Jarek Radosz",
   "license": "MIT",
+  "bin": {
+    "mass-merge": "index.js"
+  },
+  "scripts": {
+    "mass-merge": "mass-merge"
+  },
   "dependencies": {
     "@octokit/core": "^3.4.0"
   },
