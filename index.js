@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 "use strict";
 
+var prompt = require('prompt');
+
 if (process.argv.length < 4) {
   console.error("Usage:");
   console.error(
@@ -72,10 +74,28 @@ async function listAll(owner, title) {
     page: 0,
   });
 
+  for (const pr of response.data.items) {
+    console.log(pr.url);
+  }
+
   console.log(
     `Total count: ${response.data.total_count} (${response.data.items.length})`
   );
-  await sleep(2000);
+
+  prompt.start();
+
+  console.log('\n');
+  const { confirm } = await prompt.get([{ name: "confirm", description: 'Are you sure you want to proceed with the mass merge? (Y/N)' }]);
+
+  if (!confirm || (confirm.toLowerCase() !== "n" && confirm.toLowerCase() !== "y")) {
+    console.log("Please answer Y or N.");
+    process.exit(1);
+  }
+
+  if (confirm.toLowerCase() === "n") {
+    console.log("Exiting...");
+    process.exit(1);
+  }
 
   let processed = 0;
 
