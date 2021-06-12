@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 "use strict";
 
-const prompt = require('prompt');
+const prompt = require("prompt");
 
 if (process.argv.length < 4) {
   console.error("Usage:");
@@ -84,10 +84,19 @@ async function listAll(owner, title) {
 
   prompt.start();
 
-  console.log('\n');
-  const { confirm } = await prompt.get([{ name: "confirm", description: 'Are you sure you want to proceed with the mass merge? (Y/N)' }]);
+  console.log("\n");
+  const { confirm } = await prompt.get([
+    {
+      name: "confirm",
+      description:
+        "Are you sure you want to proceed with the mass merge? (Y/N)",
+    },
+  ]);
 
-  if (!confirm || (confirm.toLowerCase() !== "n" && confirm.toLowerCase() !== "y")) {
+  if (
+    !confirm ||
+    (confirm.toLowerCase() !== "n" && confirm.toLowerCase() !== "y")
+  ) {
     console.log("Please answer Y or N.");
     process.exit(1);
   }
