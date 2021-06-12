@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 "use strict";
 
-var prompt = require('prompt');
+const prompt = require('prompt');
 
 if (process.argv.length < 4) {
   console.error("Usage:");
