@@ -1,6 +1,6 @@
 {
   "name": "mass-merge",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "A script for mass-approving and merging Dependabot pull requests",
   "main": "index.js",
   "author": "Jarek Radosz",
