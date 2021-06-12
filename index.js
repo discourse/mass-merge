@@ -82,28 +82,30 @@ async function listAll(owner, title) {
     `Total count: ${response.data.total_count} (${response.data.items.length})`
   );
 
-  prompt.start();
+  if (response.data.total_count > 0) {
+    prompt.start();
 
-  console.log("\n");
-  const { confirm } = await prompt.get([
-    {
-      name: "confirm",
-      description:
-        "Are you sure you want to proceed with the mass merge? (Y/N)",
-    },
-  ]);
+    console.log("\n");
+    const { confirm } = await prompt.get([
+      {
+        name: "confirm",
+        description:
+          "Are you sure you want to proceed with the mass merge? (Y/N)",
+      },
+    ]);
 
-  if (
-    !confirm ||
-    (confirm.toLowerCase() !== "n" && confirm.toLowerCase() !== "y")
-  ) {
-    console.log("Please answer Y or N.");
-    process.exit(1);
-  }
+    if (
+      !confirm ||
+      (confirm.toLowerCase() !== "n" && confirm.toLowerCase() !== "y")
+    ) {
+      console.log("Please answer Y or N.");
+      process.exit(1);
+    }
 
-  if (confirm.toLowerCase() === "n") {
-    console.log("Exiting...");
-    process.exit(1);
+    if (confirm.toLowerCase() === "n") {
+      console.log("Exiting...");
+      process.exit(1);
+    }
   }
 
   let processed = 0;
