@@ -6,7 +6,7 @@ const prompt = require("prompt");
 if (process.argv.length < 4) {
   console.error("Usage:");
   console.error(
-    'GITHUB_TOKEN=*** npx mass-merge [organization] ["commit message"]'
+    'GITHUB_TOKEN=*** npx mass-merge <organization> <"commit message"> [author]'
   );
   process.exit(1);
 }
@@ -52,7 +52,7 @@ async function merge(owner, repo, pullNumber) {
   console.log("and merged");
 }
 
-async function listAll(owner, title) {
+async function listAll(owner, title, author) {
   const query = [
     "is:open",
     "is:pr",
@@ -61,7 +61,7 @@ async function listAll(owner, title) {
     // "status:success", doesn't work
     "comments:0",
     `org:${owner}`,
-    "author:app/dependabot",
+    `author:${author}`,
     "in:title",
     `"${title}"`,
   ].join(" ");
@@ -109,6 +109,7 @@ async function listAll(owner, title) {
   }
 
   let processed = 0;
+  const required_user_login = author === "app/dependabot" ? "dependabot[bot]" : author;
 
   for (const pr of response.data.items) {
     const regex = new RegExp(`\/repos\/${owner}\/([^\/]+)\/`);
@@ -116,9 +117,9 @@ async function listAll(owner, title) {
     process.stdout.write(`${repo}#${pr.number} `);
 
     // Safety checks
-    if (pr.user.login !== "dependabot[bot]") {
+    if (pr.user.login !== required_user_login) {
       console.log(
-        `invalid PR author: "${pr.user.login}" expected: "dependabot[bot]"`
+        `invalid PR author: "${pr.user.login}" expected: "${required_user_login}"`
       );
       continue;
     }
@@ -141,7 +142,7 @@ async function listAll(owner, title) {
   };
 }
 
-listAll(process.argv[2], process.argv[3])
+listAll(process.argv[2], process.argv[3], process.argv[4] || "app/dependabot")
   .then(({ processed, total }) => {
     console.log(`\nDone (${processed}/${total})`);
   })
