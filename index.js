@@ -6,7 +6,7 @@ const prompt = require("prompt");
 if (process.argv.length < 4) {
   console.error("Usage:");
   console.error(
-    'GITHUB_TOKEN=*** npx mass-merge <organization> <"commit message"> [author]'
+    'GITHUB_TOKEN=*** npx mass-merge <organization> <"commit message"> <author> [--ignore-checks]'
   );
   process.exit(1);
 }
@@ -52,13 +52,48 @@ async function merge(owner, repo, pullNumber) {
   console.log("and merged");
 }
 
-async function listAll(owner, title, author) {
+function extractUrlParts(url) {
+  const match = url.match(/\/repos\/([^\/]+)\/([^\/]+)\/issues\/([^\/]+)/);
+  return {
+    owner: match[1],
+    repo: match[2],
+    id: match[3],
+  };
+}
+
+async function getCheckStatus(pr) {
+  const { owner, repo, id } = extractUrlParts(pr.url);
+
+  const detail = await octokit.request(
+    `GET /repos/${owner}/${repo}/pulls/${id}`
+  );
+  const sha = detail.data.head.sha;
+
+  const checks = await octokit.request(
+    `GET /repos/${owner}/${repo}/commits/${sha}/check-runs`
+  );
+
+  const runs = checks.data.check_runs;
+
+  if (runs.length < 1) {
+    return "missing";
+  } else if (runs.every((r) => r.conclusion === "success")) {
+    return "success";
+  } else if (runs.some((r) => r.status === "queued")) {
+    return "queued";
+  } else if (runs.some((r) => r.status === "in_progress")) {
+    return "in_progress";
+  } else {
+    return "failed";
+  }
+}
+
+async function listAll(owner, title, author, { ignoreChecks = false } = {}) {
   const query = [
     "is:open",
     "is:pr",
     "archived:false",
     "draft:false",
-    // "status:success", doesn't work
     "comments:0",
     `org:${owner}`,
     `author:${author}`,
@@ -74,32 +109,24 @@ async function listAll(owner, title, author) {
     page: 0,
   });
 
-  const successfulPRs = [];
+  const toMerge = [];
 
   for (const pr of response.data.items) {
-    const match = pr.url.match(/\/repos\/([^\/]+)\/([^\/]+)\/issues\/([^\/]+)/);
-    // const owner = match[1];
-    const repo = match[2];
-    const id = match[3];
-    const detail = await octokit.request(
-      `GET /repos/${owner}/${repo}/pulls/${id}`
-    );
-    const sha = detail.data.head.sha;
-
-    const checks = await octokit.request(
-      `GET /repos/${owner}/${repo}/commits/${sha}/check-runs`
-    );
-
-    const runs = checks.data.check_runs;
-    const success =
-      runs.length >= 4 && runs.every((r) => r.conclusion === "success");
-
+    const { repo, id } = extractUrlParts(pr.url);
     const humanURL = `https://github.com/${owner}/${repo}/pull/${id}`;
 
-    if (success) {
+    if (ignoreChecks) {
+      console.log(humanURL);
+      toMerge.push(pr);
+      continue;
+    }
+
+    const status = await getCheckStatus(pr);
+
+    if (status === "success") {
       console.log(`✅ ${humanURL}`);
-      successfulPRs.push(pr);
-    } else if (runs.some((r) => ["queued", "in_progress"].includes(r.status))) {
+      toMerge.push(pr);
+    } else if (["queued", "in_progress"].includes(status)) {
       console.log(`❓ ${humanURL}`);
     } else {
       console.log(`❌ ${humanURL}`);
@@ -107,18 +134,17 @@ async function listAll(owner, title, author) {
   }
 
   console.log(
-    `Total count: ${response.data.total_count} (${successfulPRs.length} successful)`
+    `Checked ${response.data.total_count} PRs - ${toMerge.length} ready to merge`
   );
 
-  if (successfulPRs.length > 0) {
+  if (toMerge.length > 0) {
     prompt.start();
 
     console.log("\n");
     const { confirm } = await prompt.get([
       {
         name: "confirm",
-        description:
-          "Are you sure you want to proceed with the mass merge of successful PRs? (Y/N)",
+        description: `Are you sure you want to proceed with the mass merge of ${toMerge.length} PRs? (Y/N)`,
       },
     ]);
 
@@ -140,7 +166,7 @@ async function listAll(owner, title, author) {
   const required_user_login =
     author === "app/dependabot" ? "dependabot[bot]" : author;
 
-  for (const pr of successfulPRs) {
+  for (const pr of toMerge) {
     const regex = new RegExp(`\/repos\/${owner}\/([^\/]+)\/`);
     const repo = pr.url.match(regex)[1];
     process.stdout.write(`${repo}#${pr.number} `);
@@ -171,7 +197,14 @@ async function listAll(owner, title, author) {
   };
 }
 
-listAll(process.argv[2], process.argv[3], process.argv[4] || "app/dependabot")
+let ignoreChecks = false;
+const i = process.argv.indexOf("--ignore-checks");
+if (i >= 0) {
+  ignoreChecks = true;
+  process.argv.splice(i, 1);
+}
+
+listAll(process.argv[2], process.argv[3], process.argv[4], { ignoreChecks })
   .then(({ processed, total }) => {
     console.log(`\nDone (${processed}/${total})`);
   })
