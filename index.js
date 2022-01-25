@@ -163,7 +163,7 @@ async function listAll(owner, title, author, { ignoreChecks = false } = {}) {
   }
 
   let processed = 0;
-  const required_user_login =
+  const requiredUserLogin =
     author === "app/dependabot" ? "dependabot[bot]" : author;
 
   for (const pr of toMerge) {
@@ -172,9 +172,9 @@ async function listAll(owner, title, author, { ignoreChecks = false } = {}) {
     process.stdout.write(`${repo}#${pr.number} `);
 
     // Safety checks
-    if (pr.user.login !== required_user_login) {
+    if (pr.user.login !== requiredUserLogin) {
       console.log(
-        `invalid PR author: "${pr.user.login}" expected: "${required_user_login}"`
+        `invalid PR author: "${pr.user.login}" expected: "${requiredUserLogin}"`
       );
       continue;
     }
