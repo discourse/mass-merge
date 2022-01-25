@@ -106,7 +106,9 @@ async function listAll(owner, title, author) {
     }
   }
 
-  console.log(`Total count: ${response.data.total_count} (${successfulPRs})`);
+  console.log(
+    `Total count: ${response.data.total_count} (${successfulPRs.length} successful)`
+  );
 
   if (successfulPRs.length > 0) {
     prompt.start();
@@ -116,7 +118,7 @@ async function listAll(owner, title, author) {
       {
         name: "confirm",
         description:
-          "Are you sure you want to proceed with the mass merge? (Y/N)",
+          "Are you sure you want to proceed with the mass merge of successful PRs? (Y/N)",
       },
     ]);
 
