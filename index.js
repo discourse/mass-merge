@@ -74,15 +74,41 @@ async function listAll(owner, title, author) {
     page: 0,
   });
 
+  const successfulPRs = [];
+
   for (const pr of response.data.items) {
-    console.log(pr.url);
+    const match = pr.url.match(/\/repos\/([^\/]+)\/([^\/]+)\/issues\/([^\/]+)/);
+    // const owner = match[1];
+    const repo = match[2];
+    const id = match[3];
+    const detail = await octokit.request(
+      `GET /repos/${owner}/${repo}/pulls/${id}`
+    );
+    const sha = detail.data.head.sha;
+
+    const checks = await octokit.request(
+      `GET /repos/${owner}/${repo}/commits/${sha}/check-runs`
+    );
+
+    const runs = checks.data.check_runs;
+    const success =
+      runs.length >= 4 && runs.every((r) => r.conclusion === "success");
+
+    const humanURL = `https://github.com/${owner}/${repo}/pull/${id}`;
+
+    if (success) {
+      console.log(`✅ ${humanURL}`);
+      successfulPRs.push(pr);
+    } else if (runs.some((r) => ["queued", "in_progress"].includes(r.status))) {
+      console.log(`❓ ${humanURL}`);
+    } else {
+      console.log(`❌ ${humanURL}`);
+    }
   }
 
-  console.log(
-    `Total count: ${response.data.total_count} (${response.data.items.length})`
-  );
+  console.log(`Total count: ${response.data.total_count} (${successfulPRs})`);
 
-  if (response.data.total_count > 0) {
+  if (successfulPRs.length > 0) {
     prompt.start();
 
     console.log("\n");
@@ -109,9 +135,10 @@ async function listAll(owner, title, author) {
   }
 
   let processed = 0;
-  const required_user_login = author === "app/dependabot" ? "dependabot[bot]" : author;
+  const required_user_login =
+    author === "app/dependabot" ? "dependabot[bot]" : author;
 
-  for (const pr of response.data.items) {
+  for (const pr of successfulPRs) {
     const regex = new RegExp(`\/repos\/${owner}\/([^\/]+)\/`);
     const repo = pr.url.match(regex)[1];
     process.stdout.write(`${repo}#${pr.number} `);
