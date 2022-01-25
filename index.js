@@ -6,7 +6,7 @@ const prompt = require("prompt");
 if (process.argv.length < 4) {
   console.error("Usage:");
   console.error(
-    'GITHUB_TOKEN=*** npx mass-merge <organization> <"commit message"> [author]'
+    'GITHUB_TOKEN=*** npx mass-merge <organization> <"commit message"> <author> [--ignore-checks]'
   );
   process.exit(1);
 }
@@ -52,13 +52,48 @@ async function merge(owner, repo, pullNumber) {
   console.log("and merged");
 }
 
-async function listAll(owner, title, author) {
+function extractUrlParts(url) {
+  const match = url.match(/\/repos\/([^\/]+)\/([^\/]+)\/issues\/([^\/]+)/);
+  return {
+    owner: match[1],
+    repo: match[2],
+    id: match[3],
+  };
+}
+
+async function getCheckStatus(pr) {
+  const { owner, repo, id } = extractUrlParts(pr.url);
+
+  const detail = await octokit.request(
+    `GET /repos/${owner}/${repo}/pulls/${id}`
+  );
+  const sha = detail.data.head.sha;
+
+  const checks = await octokit.request(
+    `GET /repos/${owner}/${repo}/commits/${sha}/check-runs`
+  );
+
+  const runs = checks.data.check_runs;
+
+  if (runs.length < 1) {
+    return "missing";
+  } else if (runs.every((r) => r.conclusion === "success")) {
+    return "success";
+  } else if (runs.some((r) => r.status === "queued")) {
+    return "queued";
+  } else if (runs.some((r) => r.status === "in_progress")) {
+    return "in_progress";
+  } else {
+    return "failed";
+  }
+}
+
+async function listAll(owner, title, author, { ignoreChecks = false } = {}) {
   const query = [
     "is:open",
     "is:pr",
     "archived:false",
     "draft:false",
-    // "status:success", doesn't work
     "comments:0",
     `org:${owner}`,
     `author:${author}`,
@@ -74,23 +109,42 @@ async function listAll(owner, title, author) {
     page: 0,
   });
 
+  const toMerge = [];
+
   for (const pr of response.data.items) {
-    console.log(pr.url);
+    const { repo, id } = extractUrlParts(pr.url);
+    const humanURL = `https://github.com/${owner}/${repo}/pull/${id}`;
+
+    if (ignoreChecks) {
+      console.log(humanURL);
+      toMerge.push(pr);
+      continue;
+    }
+
+    const status = await getCheckStatus(pr);
+
+    if (status === "success") {
+      console.log(`✅ ${humanURL}`);
+      toMerge.push(pr);
+    } else if (["queued", "in_progress"].includes(status)) {
+      console.log(`❓ ${humanURL}`);
+    } else {
+      console.log(`❌ ${humanURL}`);
+    }
   }
 
   console.log(
-    `Total count: ${response.data.total_count} (${response.data.items.length})`
+    `Checked ${response.data.total_count} PRs - ${toMerge.length} ready to merge`
   );
 
-  if (response.data.total_count > 0) {
+  if (toMerge.length > 0) {
     prompt.start();
 
     console.log("\n");
     const { confirm } = await prompt.get([
       {
         name: "confirm",
-        description:
-          "Are you sure you want to proceed with the mass merge? (Y/N)",
+        description: `Are you sure you want to proceed with the mass merge of ${toMerge.length} PRs? (Y/N)`,
       },
     ]);
 
@@ -109,17 +163,18 @@ async function listAll(owner, title, author) {
   }
 
   let processed = 0;
-  const required_user_login = author === "app/dependabot" ? "dependabot[bot]" : author;
+  const requiredUserLogin =
+    author === "app/dependabot" ? "dependabot[bot]" : author;
 
-  for (const pr of response.data.items) {
+  for (const pr of toMerge) {
     const regex = new RegExp(`\/repos\/${owner}\/([^\/]+)\/`);
     const repo = pr.url.match(regex)[1];
     process.stdout.write(`${repo}#${pr.number} `);
 
     // Safety checks
-    if (pr.user.login !== required_user_login) {
+    if (pr.user.login !== requiredUserLogin) {
       console.log(
-        `invalid PR author: "${pr.user.login}" expected: "${required_user_login}"`
+        `invalid PR author: "${pr.user.login}" expected: "${requiredUserLogin}"`
       );
       continue;
     }
@@ -142,7 +197,14 @@ async function listAll(owner, title, author) {
   };
 }
 
-listAll(process.argv[2], process.argv[3], process.argv[4] || "app/dependabot")
+let ignoreChecks = false;
+const i = process.argv.indexOf("--ignore-checks");
+if (i >= 0) {
+  ignoreChecks = true;
+  process.argv.splice(i, 1);
+}
+
+listAll(process.argv[2], process.argv[3], process.argv[4], { ignoreChecks })
   .then(({ processed, total }) => {
     console.log(`\nDone (${processed}/${total})`);
   })
