@@ -132,6 +132,8 @@ async function listAll(owner, title, author, { ignoreChecks = false } = {}) {
       toMerge.push(pr);
     } else if (["queued", "in_progress"].includes(status)) {
       console.log(`❓ ${humanURL}`);
+    } else if (status === "missing") {
+      console.log(`🤔 ${humanURL}`);
     } else {
       console.log(`❌ ${humanURL}`);
     }
