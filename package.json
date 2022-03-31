@@ -17,6 +17,6 @@
     "prompt": "^1.1.0"
   },
   "devDependencies": {
-    "eslint-config-discourse": "^1.1.8"
+    "eslint-config-discourse": "^3.0.0"
   }
 }
