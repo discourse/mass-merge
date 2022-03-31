@@ -89,6 +89,10 @@ async function getCheckStatus(pr) {
 }
 
 async function listAll(owner, title, author, { ignoreChecks = false } = {}) {
+  if (author === "dependabot") {
+    author = "app/dependabot";
+  }
+
   const query = [
     "is:open",
     "is:pr",
