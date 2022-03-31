@@ -3,7 +3,7 @@
 
 const prompt = require("prompt");
 
-if (process.argv.length < 4) {
+if (process.argv.length < 5) {
   console.error("Usage:");
   console.error(
     'GITHUB_TOKEN=*** npx mass-merge <organization> <"commit message"> <author> [--ignore-checks]'
