@@ -77,7 +77,7 @@ async function getCheckStatus(pr) {
 
   if (runs.length < 1) {
     return "missing";
-  } else if (runs.every((r) => r.conclusion === "success")) {
+  } else if (runs.every((r) => ["success", "neutral"].includes(r.conclusion))) {
     return "success";
   } else if (runs.some((r) => r.status === "queued")) {
     return "queued";
