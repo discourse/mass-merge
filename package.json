@@ -10,6 +10,7 @@
     "mass-merge": "index.js"
   },
   "scripts": {
+    "lint": "yarn eslint . && yarn prettier --list-different .",
     "mass-merge": "mass-merge"
   },
   "dependencies": {
