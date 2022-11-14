@@ -187,8 +187,7 @@ async function listAll(owner, title, author, { ignoreChecks = false } = {}) {
       continue;
     }
 
-    const titleRegex = new RegExp(`${title}$`, "i");
-    if (!titleRegex.test(pr.title)) {
+    if (!pr.title.toLowerCase().endsWith(title.toLowerCase())) {
       console.log(`invalid PR title: "${pr.title}" expected: "${title}"`);
       continue;
     }
