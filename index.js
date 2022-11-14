@@ -194,7 +194,7 @@ async function listAll(owner, title, author, { ignoreChecks = false } = {}) {
       continue;
     }
 
-    if (!pr.title.endsWith(title)) {
+    if (!pr.title.toLowerCase().endsWith(title.toLowerCase())) {
       console.log(`invalid PR title: "${pr.title}" expected: "${title}"`);
       continue;
     }
