@@ -187,7 +187,8 @@ async function listAll(owner, title, author, { ignoreChecks = false } = {}) {
       continue;
     }
 
-    if (!pr.title.endsWith(title)) {
+    const titleRegex = new RegExp(`${title}$`, "i");
+    if (!titleRegex.test(pr.title)) {
       console.log(`invalid PR title: "${pr.title}" expected: "${title}"`);
       continue;
     }
