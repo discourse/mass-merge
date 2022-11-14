@@ -43,13 +43,20 @@ async function approve(owner, repo, pullNumber) {
 }
 
 async function merge(owner, repo, pullNumber) {
-  await octokit.request("PUT /repos/{owner}/{repo}/pulls/{pullNumber}/merge", {
-    owner,
-    repo,
-    pullNumber,
-    merge_method: "squash",
-  });
-  console.log("and merged");
+  try {
+    await octokit.request(
+      "PUT /repos/{owner}/{repo}/pulls/{pullNumber}/merge",
+      {
+        owner,
+        repo,
+        pullNumber,
+        merge_method: "squash",
+      }
+    );
+    console.log("and merged");
+  } catch (error) {
+    console.error(`NOT MERGED ❗️ (${error.message})`);
+  }
 }
 
 function extractUrlParts(url) {
