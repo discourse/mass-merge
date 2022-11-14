@@ -213,7 +213,10 @@ async function listAll(owner, title, author, { ignoreChecks = false } = {}) {
 }
 
 let ignoreChecks = false;
-const i = process.argv.indexOf("--ignore-checks");
+const i = process.argv.findIndex(
+  (arg) => arg === "--ignore-checks" || arg === "-f"
+);
+
 if (i >= 0) {
   ignoreChecks = true;
   process.argv.splice(i, 1);
