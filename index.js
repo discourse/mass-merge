@@ -128,12 +128,6 @@ async function listAll(owner, title, author, { ignoreChecks = false } = {}) {
     const { repo, id } = extractUrlParts(pr.url);
     const humanURL = `https://github.com/${owner}/${repo}/pull/${id}`;
 
-    if (ignoreChecks) {
-      console.log(humanURL);
-      toMerge.push(pr);
-      continue;
-    }
-
     const status = await getCheckStatus(pr);
 
     if (status === "success") {
@@ -145,6 +139,10 @@ async function listAll(owner, title, author, { ignoreChecks = false } = {}) {
       console.log(`🤔 ${humanURL}`);
     } else {
       console.log(`❌ ${humanURL}`);
+    }
+
+    if (ignoreChecks && status !== "success") {
+      toMerge.push(pr);
     }
   }
 
