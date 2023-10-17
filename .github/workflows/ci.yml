@@ -12,17 +12,15 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-
+      - uses: pnpm/action-setup@v2
+        with:
+          version: latest
       - uses: actions/setup-node@v3
         with:
           node-version: 18
-          cache: yarn
-
-      - name: Yarn install
-        run: yarn install
-
-      - name: JS linting
-        run: yarn lint
+          cache: pnpm
+      - run: pnpm install
+      - run: pnpm lint
 
   publish:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -31,7 +29,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-
       - name: Publish package
         uses: JS-DevTools/npm-publish@v2
         with:
