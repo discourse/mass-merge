@@ -124,6 +124,10 @@ async function listAll(owner, title, author, { ignoreChecks = false } = {}) {
 
   const toMerge = [];
 
+  const maxTitleLength = response.data.items.reduce((max, pr) => {
+    return Math.max(max, pr.title.length);
+  }, 0);
+
   for (const pr of response.data.items) {
     const { repo, id } = extractUrlParts(pr.url);
     const humanURL = `https://github.com/${owner}/${repo}/pull/${id}`;
@@ -131,14 +135,14 @@ async function listAll(owner, title, author, { ignoreChecks = false } = {}) {
     const status = await getCheckStatus(pr);
 
     if (status === "success") {
-      console.log(`✅ ${humanURL}`);
+      console.log(`✅ ${pr.title.padEnd(maxTitleLength)} ${humanURL}`);
       toMerge.push(pr);
     } else if (["queued", "in_progress"].includes(status)) {
-      console.log(`❓ ${humanURL}`);
+      console.log(`❓ ${pr.title.padEnd(maxTitleLength)} ${humanURL}`);
     } else if (status === "missing") {
-      console.log(`🤔 ${humanURL}`);
+      console.log(`🤔 ${pr.title.padEnd(maxTitleLength)} ${humanURL}`);
     } else {
-      console.log(`❌ ${humanURL}`);
+      console.log(`❌ ${pr.title.padEnd(maxTitleLength)} ${humanURL}`);
     }
 
     if (ignoreChecks && status !== "success") {
@@ -192,7 +196,7 @@ async function listAll(owner, title, author, { ignoreChecks = false } = {}) {
       continue;
     }
 
-    if (!pr.title.toLowerCase().endsWith(title.toLowerCase())) {
+    if (!pr.title.toLowerCase().includes(title.toLowerCase())) {
       console.log(`invalid PR title: "${pr.title}" expected: "${title}"`);
       continue;
     }
