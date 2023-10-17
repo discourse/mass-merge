@@ -6,7 +6,7 @@ const prompt = require("prompt");
 if (process.argv.length < 5) {
   console.error("Usage:");
   console.error(
-    'GITHUB_TOKEN=*** npx mass-merge <organization> <"commit message"> <author> [--ignore-checks]'
+    'GITHUB_TOKEN=*** npx mass-merge <organization> <"commit message"> <author> [--ignore-checks]',
   );
   process.exit(1);
 }
@@ -16,7 +16,7 @@ const token = process.env["GITHUB_TOKEN"];
 if (!token) {
   console.error("GITHUB_TOKEN environment variable required!");
   console.error(
-    "Create a personal access token at https://github.com/settings/tokens/new?scopes=repo"
+    "Create a personal access token at https://github.com/settings/tokens/new?scopes=repo",
   );
   process.exit(1);
 }
@@ -37,7 +37,7 @@ async function approve(owner, repo, pullNumber) {
       repo,
       pullNumber,
       event: "APPROVE",
-    }
+    },
   );
   process.stdout.write("approved ");
 }
@@ -51,7 +51,7 @@ async function merge(owner, repo, pullNumber) {
         repo,
         pullNumber,
         merge_method: "squash",
-      }
+      },
     );
     console.log("and merged");
   } catch (error) {
@@ -72,12 +72,12 @@ async function getCheckStatus(pr) {
   const { owner, repo, id } = extractUrlParts(pr.url);
 
   const detail = await octokit.request(
-    `GET /repos/${owner}/${repo}/pulls/${id}`
+    `GET /repos/${owner}/${repo}/pulls/${id}`,
   );
   const sha = detail.data.head.sha;
 
   const checks = await octokit.request(
-    `GET /repos/${owner}/${repo}/commits/${sha}/check-runs`
+    `GET /repos/${owner}/${repo}/commits/${sha}/check-runs`,
   );
 
   const runs = checks.data.check_runs;
@@ -151,7 +151,7 @@ async function listAll(owner, title, author, { ignoreChecks = false } = {}) {
   }
 
   console.log(
-    `Checked ${response.data.total_count} PRs - ${toMerge.length} ready to merge`
+    `Checked ${response.data.total_count} PRs - ${toMerge.length} ready to merge`,
   );
 
   if (toMerge.length > 0) {
@@ -191,7 +191,7 @@ async function listAll(owner, title, author, { ignoreChecks = false } = {}) {
     // Safety checks
     if (pr.user.login !== requiredUserLogin) {
       console.log(
-        `invalid PR author: "${pr.user.login}" expected: "${requiredUserLogin}"`
+        `invalid PR author: "${pr.user.login}" expected: "${requiredUserLogin}"`,
       );
       continue;
     }
@@ -216,7 +216,7 @@ async function listAll(owner, title, author, { ignoreChecks = false } = {}) {
 
 let ignoreChecks = false;
 const i = process.argv.findIndex(
-  (arg) => arg === "--ignore-checks" || arg === "-f"
+  (arg) => arg === "--ignore-checks" || arg === "-f",
 );
 
 if (i >= 0) {
