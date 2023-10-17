@@ -7,3 +7,9 @@ A script for mass-approving and merging Dependabot pull requests
 ```
 GITHUB_TOKEN=*** npx mass-merge <organization> <"commit message"> <author> [--ignore-checks]
 ```
+
+Example:
+
+```
+npx mass-merge discourse "Bump @babel/traverse" dependabot
+```
