@@ -16,13 +16,13 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: 18
-          cache: yarn
+          cache: pnpm
 
-      - name: Yarn install
-        run: yarn install
+      - name: pnpm install
+        run: pnpm install
 
       - name: JS linting
-        run: yarn lint
+        run: pnpm lint
 
   publish:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
