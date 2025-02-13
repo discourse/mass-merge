@@ -96,22 +96,41 @@ async function getCheckStatus(pr) {
   }
 }
 
-async function listAll(owner, title, author, { ignoreChecks = false } = {}) {
-  if (author === "dependabot") {
-    author = "app/dependabot";
-  }
-
-  const query = [
+function constructQuery(owner, title, author, restrictToRepos) {
+  const parts = [
     "is:open",
     "is:pr",
     "archived:false",
     "draft:false",
     "comments:0",
-    `org:${owner}`,
     `author:${author}`,
     "in:title",
     `"${title}"`,
-  ].join(" ");
+  ];
+
+  if (restrictToRepos.length === 0) {
+    parts.push(`org:${owner}`);
+  } else {
+    for (const repo of restrictToRepos) {
+      parts.push(`repo:${repo}`);
+    }
+  }
+
+  return parts.join(" ");
+}
+
+async function listAll(
+  owner,
+  title,
+  author,
+  restrictToRepos,
+  { ignoreChecks = false } = {}
+) {
+  if (author === "dependabot") {
+    author = "app/dependabot";
+  }
+
+  const query = constructQuery(owner, title, author, restrictToRepos);
 
   const response = await octokit.request("GET /search/issues", {
     q: query,
@@ -223,7 +242,14 @@ if (i >= 0) {
   process.argv.splice(i, 1);
 }
 
-listAll(process.argv[2], process.argv[3], process.argv[4], { ignoreChecks })
+let restrictToRepos = [];
+if (process.argv.length > 5 && !process.argv[5].startsWith("-")) {
+  restrictToRepos = process.argv[5].split(",");
+}
+
+listAll(process.argv[2], process.argv[3], process.argv[4], restrictToRepos, {
+  ignoreChecks,
+})
   .then(({ processed, total }) => {
     console.log(`\nDone (${processed}/${total})`);
   })
