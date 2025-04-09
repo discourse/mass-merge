@@ -133,7 +133,34 @@ function constructQuery(owner, title, author, restrictToRepos) {
   return parts.join(" ");
 }
 
-async function listAll(
+async function listAll(owner, title, author, restrictToRepos) {
+  let page = 0;
+  let prs = [];
+  const query = constructQuery(owner, title, author, restrictToRepos);
+
+  // 10 pages is a safety net, in case numbers don't add up, so we don't loop forever
+  while (page < 10) {
+    const response = await octokit.request("GET /search/issues", {
+      q: query,
+      advanced_search: true,
+      sort: "created",
+      order: "asc",
+      per_page: 100,
+      page,
+    });
+
+    prs = [...prs, ...response.data.items];
+    page++;
+
+    if (prs.length >= response.data.total_count) {
+      break;
+    }
+  }
+
+  return prs;
+}
+
+async function run(
   owner,
   title,
   author,
@@ -144,23 +171,15 @@ async function listAll(
     author = "app/dependabot";
   }
 
-  const query = constructQuery(owner, title, author, restrictToRepos);
-
-  const response = await octokit.request("GET /search/issues", {
-    q: query,
-    sort: "created",
-    order: "asc",
-    per_page: 100,
-    page: 0,
-  });
-
+  const prs = await listAll(owner, title, author, restrictToRepos);
+  console.log(`Found ${prs.length} PRs`);
   const toMerge = [];
 
-  const maxTitleLength = response.data.items.reduce((max, pr) => {
+  const maxTitleLength = prs.reduce((max, pr) => {
     return Math.max(max, pr.title.length);
   }, 0);
 
-  for (const pr of response.data.items) {
+  for (const pr of prs) {
     const { repo, id } = extractUrlParts(pr.url);
     const humanURL = `https://github.com/${owner}/${repo}/pull/${id}`;
 
@@ -182,9 +201,7 @@ async function listAll(
     }
   }
 
-  console.log(
-    `Checked ${response.data.total_count} PRs - ${toMerge.length} ready to merge`
-  );
+  console.log(`Checked ${prs.length} PRs - ${toMerge.length} ready to merge`);
 
   if (toMerge.length > 0) {
     prompt.start();
@@ -242,7 +259,7 @@ async function listAll(
 
   return {
     processed,
-    total: response.data.items.length,
+    total: prs.length,
   };
 }
 
@@ -261,7 +278,7 @@ if (process.argv.length > 5 && !process.argv[5].startsWith("-")) {
   restrictToRepos = process.argv[5].split(",");
 }
 
-listAll(process.argv[2], process.argv[3], process.argv[4], restrictToRepos, {
+run(process.argv[2], process.argv[3], process.argv[4], restrictToRepos, {
   ignoreChecks,
 })
   .then(({ processed, total }) => {
