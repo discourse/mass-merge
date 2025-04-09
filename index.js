@@ -6,7 +6,7 @@ const prompt = require("prompt");
 if (process.argv.length < 5) {
   console.error("Usage:");
   console.error(
-    'GITHUB_TOKEN=*** npx mass-merge <organization> <"commit message"> <author> [--ignore-checks]'
+    'GITHUB_TOKEN=*** npx mass-merge <organization(s)> <"commit message"> <author> [--ignore-checks]'
   );
   process.exit(1);
 }
@@ -61,7 +61,7 @@ async function merge(owner, repo, pullNumber) {
 function extractUrlParts(url) {
   const match = url.match(/\/repos\/([^\/]+)\/([^\/]+)\/issues\/([^\/]+)/);
   return {
-    owner: match[1],
+    org: match[1],
     repo: match[2],
     id: match[3],
   };
@@ -82,15 +82,15 @@ async function retry(func, triesLeft = 3) {
 }
 
 async function getCheckStatus(pr) {
-  const { owner, repo, id } = extractUrlParts(pr.url);
+  const { org, repo, id } = extractUrlParts(pr.url);
 
   const detail = await octokit.request(
-    `GET /repos/${owner}/${repo}/pulls/${id}`
+    `GET /repos/${org}/${repo}/pulls/${id}`
   );
   const sha = detail.data.head.sha;
 
   const checks = await octokit.request(
-    `GET /repos/${owner}/${repo}/commits/${sha}/check-runs`
+    `GET /repos/${org}/${repo}/commits/${sha}/check-runs`
   );
 
   const runs = checks.data.check_runs;
@@ -110,7 +110,7 @@ async function getCheckStatus(pr) {
   }
 }
 
-function constructQuery(owner, title, author, restrictToRepos) {
+function constructQuery(owners, title, author, restrictToRepos) {
   const parts = [
     "is:open",
     "is:pr",
@@ -123,7 +123,8 @@ function constructQuery(owner, title, author, restrictToRepos) {
   ];
 
   if (restrictToRepos.length === 0) {
-    parts.push(`org:${owner}`);
+    const orgs = owners.map((owner) => `org:${owner}`);
+    parts.push(`(${orgs.join(" OR ")})`);
   } else {
     for (const repo of restrictToRepos) {
       parts.push(`repo:${repo}`);
@@ -133,10 +134,11 @@ function constructQuery(owner, title, author, restrictToRepos) {
   return parts.join(" ");
 }
 
-async function listAll(owner, title, author, restrictToRepos) {
+async function listAll(ownersString, title, author, restrictToRepos) {
   let page = 0;
   let prs = [];
-  const query = constructQuery(owner, title, author, restrictToRepos);
+  const owners = ownersString.split(",");
+  const query = constructQuery(owners, title, author, restrictToRepos);
 
   // 10 pages is a safety net, in case numbers don't add up, so we don't loop forever
   while (page < 10) {
@@ -161,7 +163,7 @@ async function listAll(owner, title, author, restrictToRepos) {
 }
 
 async function run(
-  owner,
+  orgs,
   title,
   author,
   restrictToRepos,
@@ -171,7 +173,7 @@ async function run(
     author = "app/dependabot";
   }
 
-  const prs = await listAll(owner, title, author, restrictToRepos);
+  const prs = await listAll(orgs, title, author, restrictToRepos);
   console.log(`Found ${prs.length} PRs`);
   const toMerge = [];
 
@@ -180,8 +182,8 @@ async function run(
   }, 0);
 
   for (const pr of prs) {
-    const { repo, id } = extractUrlParts(pr.url);
-    const humanURL = `https://github.com/${owner}/${repo}/pull/${id}`;
+    const { org, repo, id } = extractUrlParts(pr.url);
+    const humanURL = `https://github.com/${org}/${repo}/pull/${id}`;
 
     const status = await retry(() => getCheckStatus(pr));
 
@@ -233,8 +235,8 @@ async function run(
     author === "app/dependabot" ? "dependabot[bot]" : author;
 
   for (const pr of toMerge) {
-    const regex = new RegExp(`\/repos\/${owner}\/([^\/]+)\/`);
-    const repo = pr.url.match(regex)[1];
+    const regex = new RegExp(`\/repos\/([^\/]+)\/([^\/]+)\/`);
+    const [, org, repo] = pr.url.match(regex);
     process.stdout.write(`${repo}#${pr.number} `);
 
     // Safety checks
@@ -251,8 +253,8 @@ async function run(
     }
 
     await sleep(2000);
-    await retry(() => approve(owner, repo, pr.number));
-    await retry(() => merge(owner, repo, pr.number));
+    await retry(() => approve(org, repo, pr.number));
+    await retry(() => merge(org, repo, pr.number));
 
     processed++;
   }
