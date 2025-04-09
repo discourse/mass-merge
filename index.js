@@ -54,7 +54,7 @@ async function merge(owner, repo, pullNumber) {
     );
     console.log("and merged");
   } catch (error) {
-    console.error(`NOT MERGED ❗️ (${error.message})`);
+    console.error(`NOT MERGED ❗️ (${error.status} ${error.message})`);
   }
 }
 
