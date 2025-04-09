@@ -85,9 +85,7 @@ async function retry(func, triesLeft = 3) {
 async function getCheckStatus(pr) {
   const { org, repo, id } = extractUrlParts(pr.url);
 
-  const detail = await octokit.request(
-    `GET /repos/${org}/${repo}/pulls/${id}`
-  );
+  const detail = await octokit.request(`GET /repos/${org}/${repo}/pulls/${id}`);
   const sha = detail.data.head.sha;
 
   const checks = await octokit.request(
