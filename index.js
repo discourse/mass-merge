@@ -67,6 +67,20 @@ function extractUrlParts(url) {
   };
 }
 
+async function retry(func, triesLeft = 3) {
+  try {
+    await func();
+  } catch (error) {
+    triesLeft--;
+
+    if (triesLeft > 0) {
+      retry(func, triesLeft);
+    } else {
+      throw error;
+    }
+  }
+}
+
 async function getCheckStatus(pr) {
   const { owner, repo, id } = extractUrlParts(pr.url);
 
@@ -150,7 +164,7 @@ async function listAll(
     const { repo, id } = extractUrlParts(pr.url);
     const humanURL = `https://github.com/${owner}/${repo}/pull/${id}`;
 
-    const status = await getCheckStatus(pr);
+    const status = await retry(() => getCheckStatus(pr));
 
     if (status === "success") {
       console.log(`✅ ${pr.title.padEnd(maxTitleLength)} ${humanURL}`);
@@ -220,8 +234,8 @@ async function listAll(
     }
 
     await sleep(2000);
-    await approve(owner, repo, pr.number);
-    await merge(owner, repo, pr.number);
+    await retry(() => approve(owner, repo, pr.number));
+    await retry(() => merge(owner, repo, pr.number));
 
     processed++;
   }
