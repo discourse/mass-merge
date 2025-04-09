@@ -69,12 +69,12 @@ function extractUrlParts(url) {
 
 async function retry(func, triesLeft = 3) {
   try {
-    await func();
+    return await func();
   } catch (error) {
     triesLeft--;
 
     if (triesLeft > 0) {
-      retry(func, triesLeft);
+      return retry(func, triesLeft);
     } else {
       throw error;
     }
