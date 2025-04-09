@@ -74,6 +74,7 @@ async function retry(func, triesLeft = 3) {
     triesLeft--;
 
     if (triesLeft > 0) {
+      await sleep(2000);
       return retry(func, triesLeft);
     } else {
       throw error;
