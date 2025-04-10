@@ -156,6 +156,8 @@ async function listAll(ownersString, title, author, restrictToRepos) {
     if (prs.length >= response.data.total_count) {
       break;
     }
+
+    await sleep(1000);
   }
 
   return prs;
