@@ -244,9 +244,9 @@ async function run(
     process.stdout.write(`${repo}#${pr.number} `);
 
     // Safety checks
-    if (pr.user.login !== requiredUserLogin) {
+    if (pr.user.login.toLowerCase() !== requiredUserLogin.toLowerCase()) {
       console.log(
-        `invalid PR author: "${pr.user.login}" expected: "${requiredUserLogin}"`
+        `invalid PR author: "${pr.user.login.toLowerCase()}" expected: "${requiredUserLogin.toLowerCase()}"`
       );
       continue;
     }
