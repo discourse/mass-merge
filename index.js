@@ -134,7 +134,7 @@ function constructQuery(owners, title, author, restrictToRepos) {
 }
 
 async function listAll(ownersString, title, author, restrictToRepos) {
-  let page = 0;
+  let page = 1;
   const prs = new Map();
   const owners = ownersString.split(",");
   const query = constructQuery(owners, title, author, restrictToRepos);
