@@ -135,7 +135,7 @@ function constructQuery(owners, title, author, restrictToRepos) {
 
 async function listAll(ownersString, title, author, restrictToRepos) {
   let page = 0;
-  let prs = [];
+  const prs = new Map();
   const owners = ownersString.split(",");
   const query = constructQuery(owners, title, author, restrictToRepos);
 
@@ -150,17 +150,20 @@ async function listAll(ownersString, title, author, restrictToRepos) {
       page,
     });
 
-    prs = [...prs, ...response.data.items];
+    for (const pr of response.data.items) {
+      prs.set(pr.id, pr);
+    }
+
     page++;
 
-    if (prs.length >= response.data.total_count) {
+    if (prs.size >= response.data.total_count) {
       break;
     }
 
     await sleep(1000);
   }
 
-  return prs;
+  return [...prs.values()];
 }
 
 async function run(
