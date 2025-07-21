@@ -125,9 +125,8 @@ function constructQuery(owners, title, author, restrictToRepos) {
     const orgs = owners.map((owner) => `org:${owner}`);
     parts.push(`(${orgs.join(" OR ")})`);
   } else {
-    for (const repo of restrictToRepos) {
-      parts.push(`repo:${repo}`);
-    }
+    const repos = restrictToRepos.map((repo) => `repo:${repo}`);
+    parts.push(`(${repos.join(" OR ")})`);
   }
 
   return parts.join(" ");
