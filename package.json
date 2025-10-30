@@ -1,11 +1,14 @@
 {
   "name": "mass-merge",
-  "version": "1.7.0",
+  "version": "1.7.1",
   "description": "A script for mass-approving and merging Dependabot pull requests",
   "main": "index.js",
   "author": "Jarek Radosz",
   "license": "MIT",
   "repository": "https://github.com/discourse/mass-merge",
+  "publishConfig": {
+    "access": "public"
+  },
   "bin": {
     "mass-merge": "index.js"
   },
