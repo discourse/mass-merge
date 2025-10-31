@@ -9,27 +9,41 @@ on:
 jobs:
   lint:
     runs-on: ubuntu-latest
+    name: Linting
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
+
       - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v6
         with:
-          version: latest
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-      - run: pnpm install
-      - run: pnpm lint
+          node-version: "24"
+          cache: "pnpm"
+
+      - name: Pnpm install
+        run: pnpm install
+
+      - name: Lint
+        run: pnpm lint
 
   publish:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: lint
     runs-on: ubuntu-latest
 
+    permissions:
+      id-token: write
+
     steps:
-      - uses: actions/checkout@v4
-      - name: Publish package
-        uses: JS-DevTools/npm-publish@v3
+      - uses: actions/checkout@v5
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v6
         with:
-          token: ${{ secrets.NPM_TOKEN }}
+          node-version: "24"
+          cache: "pnpm"
+
+      - name: Publish package
+        run: pnpm publish -r
