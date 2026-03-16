@@ -178,7 +178,6 @@ async function run(
 
   const prs = await listAll(orgs, title, author, restrictToRepos);
   console.log(`Found ${prs.length} PRs`);
-  const toMerge = [];
 
   const maxTitleLength = prs.reduce((max, pr) => {
     return Math.max(max, pr.title.length);
@@ -187,35 +186,20 @@ async function run(
   for (const pr of prs) {
     const { org, repo, id } = extractUrlParts(pr.url);
     const humanURL = `https://github.com/${org}/${repo}/pull/${id}`;
-
-    const status = await retry(() => getCheckStatus(pr));
-
-    if (status === "success") {
-      console.log(`✅ ${pr.title.padEnd(maxTitleLength)} ${humanURL}`);
-      toMerge.push(pr);
-    } else if (["queued", "in_progress"].includes(status)) {
-      console.log(`❓ ${pr.title.padEnd(maxTitleLength)} ${humanURL}`);
-    } else if (status === "missing") {
-      console.log(`🤔 ${pr.title.padEnd(maxTitleLength)} ${humanURL}`);
-    } else {
-      console.log(`❌ ${pr.title.padEnd(maxTitleLength)} ${humanURL}`);
-    }
-
-    if (ignoreChecks && status !== "success") {
-      toMerge.push(pr);
-    }
+    console.log(`   ${pr.title.padEnd(maxTitleLength)} ${humanURL}`);
   }
 
-  console.log(`Checked ${prs.length} PRs - ${toMerge.length} ready to merge`);
-
-  if (toMerge.length > 0) {
+  if (prs.length > 0) {
     prompt.start();
 
     console.log("\n");
+    const description = ignoreChecks
+      ? `Merge all ${prs.length} PRs (ignoring checks)?`
+      : `Merge any of these ${prs.length} PRs with passing checks?`;
     const { confirm } = await prompt.get([
       {
         name: "confirm",
-        description: `Are you sure you want to proceed with the mass merge of ${toMerge.length} PRs? (Y/N)`,
+        description: `${description} (Y/N)`,
       },
     ]);
 
@@ -234,27 +218,56 @@ async function run(
   }
 
   let processed = 0;
+  let skipped = 0;
   const requiredUserLogin =
     author === "app/dependabot" ? "dependabot[bot]" : author;
 
-  for (const pr of toMerge) {
+  for (const pr of prs) {
     const regex = new RegExp(`\/repos\/([^\/]+)\/([^\/]+)\/`);
     const [, org, repo] = pr.url.match(regex);
-    process.stdout.write(`${repo}#${pr.number} `);
 
     // Safety checks
     if (pr.user.login.toLowerCase() !== requiredUserLogin.toLowerCase()) {
       console.log(
-        `invalid PR author: "${pr.user.login.toLowerCase()}" expected: "${requiredUserLogin.toLowerCase()}"`
+        `⚠️  ${repo}#${
+          pr.number
+        } invalid PR author: "${pr.user.login.toLowerCase()}" expected: "${requiredUserLogin.toLowerCase()}"`
       );
       continue;
     }
 
     if (!pr.title.toLowerCase().includes(title.toLowerCase())) {
-      console.log(`invalid PR title: "${pr.title}" expected: "${title}"`);
+      console.log(
+        `⚠️  ${repo}#${pr.number} invalid PR title: "${pr.title}" expected: "${title}"`
+      );
       continue;
     }
 
+    // Check CI status right before merging
+    if (!ignoreChecks) {
+      const status = await retry(() => getCheckStatus(pr));
+      if (status !== "success") {
+        let emoji;
+        switch (status) {
+          case "queued":
+          case "in_progress":
+            emoji = "❓";
+            break;
+          case "missing":
+            emoji = "🤔";
+            break;
+          default:
+            emoji = "❌";
+        }
+        console.log(
+          `${emoji} ${repo}#${pr.number} skipped (checks: ${status})`
+        );
+        skipped++;
+        continue;
+      }
+    }
+
+    process.stdout.write(`✅ ${repo}#${pr.number} `);
     await sleep(2000);
     await retry(() => approve(org, repo, pr.number));
     await retry(() => merge(org, repo, pr.number));
@@ -264,6 +277,7 @@ async function run(
 
   return {
     processed,
+    skipped,
     total: prs.length,
   };
 }
@@ -286,7 +300,12 @@ if (process.argv.length > 5 && !process.argv[5].startsWith("-")) {
 run(process.argv[2], process.argv[3], process.argv[4], restrictToRepos, {
   ignoreChecks,
 })
-  .then(({ processed, total }) => {
-    console.log(`\nDone (${processed}/${total})`);
+  .then(({ processed, skipped, total }) => {
+    let summary = `\nDone (${processed}/${total} merged`;
+    if (skipped > 0) {
+      summary += `, ${skipped} skipped`;
+    }
+    summary += ")";
+    console.log(summary);
   })
   .catch((e) => console.error(e));
