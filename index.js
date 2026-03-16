@@ -229,7 +229,9 @@ async function run(
     // Safety checks
     if (pr.user.login.toLowerCase() !== requiredUserLogin.toLowerCase()) {
       console.log(
-        `⚠️  ${repo}#${pr.number} invalid PR author: "${pr.user.login.toLowerCase()}" expected: "${requiredUserLogin.toLowerCase()}"`
+        `⚠️  ${repo}#${
+          pr.number
+        } invalid PR author: "${pr.user.login.toLowerCase()}" expected: "${requiredUserLogin.toLowerCase()}"`
       );
       continue;
     }
@@ -257,7 +259,9 @@ async function run(
           default:
             emoji = "❌";
         }
-        console.log(`${emoji} ${repo}#${pr.number} skipped (checks: ${status})`);
+        console.log(
+          `${emoji} ${repo}#${pr.number} skipped (checks: ${status})`
+        );
         skipped++;
         continue;
       }
