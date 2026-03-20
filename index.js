@@ -41,7 +41,7 @@ async function approve(owner, repo, pullNumber) {
   process.stdout.write("approved ");
 }
 
-async function merge(owner, repo, pullNumber) {
+async function merge(owner, repo, pullNumber, title, body) {
   try {
     await octokit.request(
       "PUT /repos/{owner}/{repo}/pulls/{pullNumber}/merge",
@@ -50,6 +50,8 @@ async function merge(owner, repo, pullNumber) {
         repo,
         pullNumber,
         merge_method: "squash",
+        commit_title: title,
+        commit_message: body || "",
       }
     );
     console.log("and merged");
@@ -270,7 +272,7 @@ async function run(
     process.stdout.write(`✅ ${repo}#${pr.number} `);
     await sleep(2000);
     await retry(() => approve(org, repo, pr.number));
-    await retry(() => merge(org, repo, pr.number));
+    await retry(() => merge(org, repo, pr.number, pr.title, pr.body));
 
     processed++;
   }
